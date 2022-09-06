@@ -1,0 +1,15 @@
+
+server.port=9094
+
+spring.application.name=digitalbook-author
+
+eureka.client.serviceUrl.defaultZone= ${EUREKA_URI:http://65.2.143.139:8762/eureka}
+
+jwt.secret=some@secret#key
+
+spring.jpa.show-sql=true
+spring.jpa.hibernate.ddl-auto=update
+
+spring.datasource.url=jdbc:mysql://database-1.cogbii2entqn.ap-south-1.rds.amazonaws.com:3306/authordb
+spring.datasource.username=root
+spring.datasource.password=15032210

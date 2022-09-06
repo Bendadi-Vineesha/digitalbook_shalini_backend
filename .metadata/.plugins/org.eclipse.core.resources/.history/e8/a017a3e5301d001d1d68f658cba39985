@@ -1,0 +1,150 @@
+package com.demo.controllers;
+
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpHeaders;
+
+import com.demo.clients.FantasyMoviesClient;
+import com.demo.models.Author;
+import com.demo.models.Book;
+import com.demo.models.Show;
+import com.demo.repositories.AuthorRepo;
+import com.demo.services.AuthorService;
+//import com.demo.services.BookService;
+//import com.google.common.net.HttpHeaders;
+
+//import feign.Request.HttpMethod;
+
+@RestController
+@RequestMapping("/author/api/v1")
+@CrossOrigin
+public class ShowController {
+
+	@Autowired
+	private KafkaTemplate<String, Book> kafkaTemplate;
+
+	private static final String TOPIC = "kafka-topic";
+	private static final String TOPIC1 = "book-topic";
+	
+	@Autowired
+	private RestTemplate restTemplate;
+
+	@Autowired
+	private AuthorRepo repo;
+
+	@Autowired
+	private AuthorService authorService;
+
+	@GetMapping("")
+	public String greet() {
+		System.out.println("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+		return "hello";
+	}
+
+	@GetMapping("/see")
+	public List<Author> see() {
+		return authorService.seeAuthor();
+	}
+	
+	@GetMapping("/findBook1/{author}")
+	public ResponseEntity<Object> findBook1(@PathVariable String author) {
+		Book b=new Book();
+		b.setAuthor(author);
+		String URL = "http://3.111.213.99:9090/book/api/v1/findBookByAuthor1?author="+author;
+		return  restTemplate.getForEntity(URL, Object.class);
+
+		
+	}
+	@GetMapping("/findBook/{author}")
+	public ResponseEntity<Object> findBook(@PathVariable String author) {
+		Book b=new Book();
+		b.setAuthor(author);
+		String URL = "http://3.111.213.99:9090/book/api/v1/findBookByAuthor?author="+author;
+		return  restTemplate.getForEntity(URL, Object.class);
+
+		
+	}
+	
+	@GetMapping("/findBookById/{id}")
+	public ResponseEntity<Object> findBook(@PathVariable int id) {
+		
+		String URL = "http://3.111.213.99:9090/book/api/v1/findBookById1?id="+id;
+		return  restTemplate.getForEntity(URL, Object.class);
+
+		
+	}
+
+	@GetMapping("/authorPage")
+	public Book onlyForAuthor() {
+		System.out.println("only for manager");
+		return new Book();
+	}
+
+	// -------------------AuthorRegistration--------------------------------------------
+	@PostMapping("/register")
+	public Author add(@RequestBody Author a) {
+
+		Author auth = repo.findByUsername(a.getUsername());
+		if (auth != null) {
+			return null;
+		} else {
+			authorService.createAuthor(a);
+			return a;
+		}
+	}
+
+	// -----------------------------CreateBook---------------------------------
+	@PostMapping("/createBook")
+	public Book addBook(@RequestBody Book b) {
+
+		String URL = "http://3.111.213.99:9090/book/api/v1/createBook";
+
+		return restTemplate.postForEntity(URL, b, Book.class).getBody();
+		
+		//kafkaTemplate.send(TOPIC, b);
+		//return b;
+
+	}
+
+
+	
+	@PutMapping("/updateBook")
+	public Book updateBook(@RequestParam int id, @RequestParam String author, @RequestBody Book b)
+	{
+		b.setId(id);
+		b.setAuthor(author);
+		
+		HttpHeaders headers = new HttpHeaders();
+	HttpEntity<Book> entity = new HttpEntity<>(b, headers);
+
+	String URL = "http://3.111.213.99:9090/book/api/v1/updateBook";
+
+	
+		//kafkaTemplate.send(TOPIC1,b);
+		Book b1= restTemplate.exchange(URL, HttpMethod.PUT, entity, Book.class).getBody();
+		
+		if(b1!=null)
+			return b1;
+		
+		return b1;
+		
+	}
+
+}
